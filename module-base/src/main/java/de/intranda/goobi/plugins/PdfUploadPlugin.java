@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,11 +87,11 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
         XMLConfiguration config = ConfigPlugins.getPluginConfig(PLUGIN_NAME);
         String folder = config.getString("folder", "derivate");
         try {
-            if (folder.equalsIgnoreCase("master")) {
+            if ("master".equalsIgnoreCase(folder)) {
                 imagefolder = process.getImagesOrigDirectory(false);
-            } else if (folder.equalsIgnoreCase("derivate")) {
+            } else if ("derivate".equalsIgnoreCase(folder)) {
                 imagefolder = process.getImagesTifDirectory(false);
-            } else if (folder.equalsIgnoreCase("source")) {
+            } else if ("source".equalsIgnoreCase(folder)) {
                 imagefolder = process.getSourceDirectory() + File.separator;
             } else {
                 Helper.setFehlerMeldung("unknownFolderConfigurationError");
@@ -122,7 +124,7 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
                 List<? extends Metadata> pageNoMetadata = page.getAllMetadataByType(logType);
                 if (pageNoMetadata != null && !pageNoMetadata.isEmpty()) {
                     comment = pageNoMetadata.get(0).getValue();
-                    if (comment.equals("uncounted")) {
+                    if ("uncounted".equals(comment)) {
                         comment = "";
                     }
                 }
@@ -135,8 +137,6 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
 
     }
 
-
-
     public void handleFileUpload(FileUploadEvent event) {
         try {
             copyFile(event.getFile().getFileName(), event.getFile().getInputStream());
@@ -145,15 +145,15 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
             logger.error(e);
         }
 
-
     }
 
-    public void copyFile(String fileName, InputStream in) {
+    public void copyFile(String fileName, InputStream in) throws IOException {
 
         if (!checkExtension(fileName)) {
             Helper.setFehlerMeldung("fileTypeNotAllowed");
             return;
         }
+
         if (fileName.startsWith(".")) {
             fileName = fileName.substring(1);
         }
@@ -173,9 +173,18 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
             return;
         }
 
+        // remove any folder information or '..'
+        Path filePath = Path.of(fileName).getFileName();
+
+        Path tmpFile = Paths.get(imagefolder, filePath.toString());
+
+        // Check that filename does not link outside the folder
+        if (!tmpFile.normalize().startsWith(imagefolder)) {
+            throw new IOException("Invalid filename");
+        }
+
         OutputStream out = null;
-        String name = imagefolder + fileName;
-        File f = new File(name);
+        File f = tmpFile.toFile();
         try {
 
             // write the inputStream to a FileOutputStream
@@ -248,11 +257,6 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
 
     }
 
-
-
-
-
-
     private boolean checkExtension(String basename) {
         for (String extension : allowedFileExtensions) {
             if (basename.endsWith(extension)) {
@@ -261,7 +265,6 @@ public class PdfUploadPlugin extends AbstractStepPlugin implements IStepPlugin, 
         }
         return false;
     }
-
 
     @Override
     public boolean execute() {
