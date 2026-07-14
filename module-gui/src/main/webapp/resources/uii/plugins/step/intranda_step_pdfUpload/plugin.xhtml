@@ -8,6 +8,7 @@
     xmlns:intranda="http://xmlns.jcp.org/jsf/composite/compositesPG"
     xmlns:section="http://goobi.io/section"
     xmlns:form="http://goobi.io/form"
+    xmlns:util="http://goobi.io/util"
     xmlns:table="http://goobi.io/table">
 
     <style>
@@ -134,8 +135,7 @@
                                             action="#{AktuelleSchritteForm.myPlugin.deleteFile}"
                                             title="#{msgs.deleteFile}"
                                             styleClass="btn btn-blank">
-                                            <span
-                                                class="fa fa-trash-o" />
+                                            <util:icon icon="trash" />
                                             <f:setPropertyActionListener
                                                 target="#{AktuelleSchritteForm.myPlugin.currentFile}"
                                                 value="#{file}" />
